@@ -5,9 +5,9 @@ class connectionStr{
 public function __construct(){}
 
 public function ConnectionFc(){
- $dbname = 'wids';
-$dbuser = 'root';
-$dbpass = 'Rc4@dm1n';
+ $dbname = '';
+$dbuser = 'r';
+$dbpass = '';
 //$dbpass = '';
 $dbhost = 'localhost';
 $conn = new mysqli($dbhost, $dbuser,$dbpass,$dbname);
