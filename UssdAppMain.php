@@ -1,5 +1,5 @@
 <?php
-
+//The main file, which is loaded when the first request comes in
 include_once 'MoUssdReceiver.php';
 include_once 'ussdlog.php';
 include_once 'weatherParams.php';
