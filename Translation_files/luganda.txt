@@ -1,16 +1,19 @@
-Wind strength=>Amaanyi g'embuyaga :
-Temperature=>Obunyogovu oba okwokya :
-Weather=>Obudde :
+//Wind strength
+wind=>Amaanyi g'embuyaga
+Temperature=>Obunyogovu oba okwokya
+Weather=>Obudde
 Advisory=>Okuwabulwa o'kwa
-
 Late=>okutuuka mu mwezi gwa
 Mid=>wakati w'omwezi gwa
 Early=>kuntandikwa yo'mwezi gwa
-
-The rains shall start in=>Enkuba ejja kutonya
-peak will be in=>wagulu 
-and end in=>neera ekomekereze 
-Daily forecast=>Entebereza y'obudde bwa'leero mu :
-Seasonal forecast=>Entebereza y'obudde bwa sizoni mu :
-
-
+//The rains shall start in
+rains=>Enkuba ejja kutonya
+//peak will be in
+peak=>wagulu
+//and end in
+end=>neera ekomekereze 
+Daily forecast=>Entebereza y'obudde bwa'leero
+Seasonal forecast=>Entebereza y'obudde bwa sizoni
+Summary=>Okusa mu
+//Advisory for
+Advisory=>Okuwabulwa mu

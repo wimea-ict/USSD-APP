@@ -14,7 +14,7 @@ try{
 $ch = curl_init();
 curl_setopt_array($ch,array(
 CURLOPT_RETURNTRANSFER =>1,   
- CURLOPT_URL =>'http://smsproviderurl.com/getapi.php?email=useremail&password=password&sender=sendernumber&message=$message&recipients=$phoneNumber',
+ CURLOPT_URL =>'http://simplysms.com/getapi.php?email=rc4wids@yahoo.com&password=VBsd9A2&sender=8777&message=$message&recipients=$phoneNumber',
 CURLOPT_USERAGENT =>'Codular Sample cURL Request'));
 
 $resp = curl_exec($ch);

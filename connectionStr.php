@@ -6,7 +6,7 @@ public function __construct(){}
 
 public function ConnectionFc(){
  $dbname = '';
-$dbuser = 'r';
+$dbuser = '';
 $dbpass = '';
 //$dbpass = '';
 $dbhost = 'localhost';

@@ -1,5 +1,5 @@
 <?php
-//The main file, which is loaded when the first request comes in
+
 include_once 'MoUssdReceiver.php';
 include_once 'ussdlog.php';
 include_once 'weatherParams.php';
@@ -63,7 +63,6 @@ if ( $receiver->getInput() != "") {
             $_SESSION['menu-Opt'] = $logic->ProcessLanguage($receiver->getInput(), $sessionId, $msisdn);
             break;
 
-//////////////////////// AMoko///////////////////////////
       case "district":
             $_SESSION['menu-Opt'] = $logic->ProcessDistrict($receiver->getInput(), $sessionId, $msisdn);
             break;
@@ -85,17 +84,20 @@ if ( $receiver->getInput() != "") {
           $_SESSION['menu-Opt'] =   $logic->invaliddistrict($receiver->getInput());  
                break;
       case "Submission-opt":
-
          $_SESSION['menu-Opt'] = $logic->SubmissionOpt($receiver->getInput(),$sessionId,$msisdn);
             break;    
       case "invalidinput":
- 
           $_SESSION['menu-Opt'] =  $logic->invalidinput($receiver->getInput());
+            break;
+      case "feedbackdisp":
+            $_SESSION['menu-Opt'] = $logic->ProcessFeedback($receiver->getInput(), $sessionId, $msisdn);
             break;
             
       }
 
 }else{
+	//trying to check ussd availability
+	echo "<h2>Welcome to WIDS</h2>";
 $action = "end";
 $strToDisp = "Error Occured";
 $this->smsApi->ussdResponseSender($strToDisp,$action);

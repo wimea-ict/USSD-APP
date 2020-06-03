@@ -1,8 +1,8 @@
 <?php  
 
-    $dbname = 'wids';
-    $dbuser = 'root';
-    $dbpass = 'Rc4@dm1n';
+    $dbname = ' ';
+    $dbuser = ' ';
+    $dbpass = ' ';
     //$dbpass = '';
     $dbhost = 'localhost';
 
