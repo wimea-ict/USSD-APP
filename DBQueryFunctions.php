@@ -17,6 +17,10 @@ use AfricasTalking\SDK\AfricasTalking;
          $this->smsApi = new smsApi;
          $this->connectionStr = new connectionStr;
          $this->ussdresponsesender = new ussdresponsesender;
+         date_default_timezone_set('Africa/Nairobi');
+
+
+         $time_slots = array(4,1,2,3);
 
      }
 
@@ -214,11 +218,20 @@ use AfricasTalking\SDK\AfricasTalking;
          try {
             $conn = $this->connectionStr->ConnectionFc();
             $today = date('Y-m-d');
+
+            $yesterday = date('Y-m-d', strtotime( $today . ' -1 day' ) );
+            $the_date = $today;
+
+// Now with time
+            // strtotime(date('Y-m-d g:ia')
+            
+
+
             $divisions = strtoupper($_SESSION['district']);
             $lange = $_SESSION['language'];
             $qProc = "SELECT id, daily FROM ussdmenulanguage WHERE language = '$lange'";
             $identity = "";
-
+            $ses= $this->get_seasom();
             $query = $conn->query($qProc);
             while ($row = $query->fetch_assoc()) {
                 $identity = $row['id'];  
@@ -226,14 +239,50 @@ use AfricasTalking\SDK\AfricasTalking;
             
 
             if($data_for == "Daily Forecast"){
-                $daily_and_advisory="SELECT daily_advisory.message_summary as summary,weather_category.cat_name as weather_desc, minor_sector.minor_name as sector, daily_forecast.time as currently FROM daily_advisory LEFT OUTER JOIN minor_sector on minor_sector.id=daily_advisory.sector LEFT OUTER JOIN daily_forecast on daily_forecast.id=daily_advisory.forecast_id LEFT OUTER JOIN daily_forecast_data on daily_forecast_data.forecast_id = daily_advisory.forecast_id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN division on division.region_id = daily_forecast_data.region_id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$today' AND daily_forecast.language_id = '$identity'";
-                $query = $conn->query($daily_and_advisory);
+                if(strtotime(date('Y-m-d g:ia')) < strtotime(date('Y-m-d').' 6:00pm') ){
+                    $the_date = $yesterday;
+                }
+                $daily_and_advisory="SELECT daily_advisory.message_summary as summary,weather_category.cat_name as weather_desc, minor_sector.minor_name as sector, daily_forecast.time as currently FROM daily_advisory LEFT OUTER JOIN minor_sector on minor_sector.id=daily_advisory.sector LEFT OUTER JOIN daily_forecast on daily_forecast.id=daily_advisory.forecast_id LEFT OUTER JOIN daily_forecast_data on daily_forecast_data.forecast_id = daily_advisory.forecast_id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN division on division.region_id = daily_forecast_data.region_id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$the_date' AND daily_forecast.language_id = '$identity'";
+
+
+                    $query = $conn->query($daily_and_advisory);
+                
+                
                 if ($query->num_rows > 0) { $sect_count++;
                     while ($row = $query->fetch_assoc()) {
                     }
                 }
             }else if($data_for == "Seasonal Forecast"){
-                $seasonal_and_advisory = "SELECT advisory.message_summary as summary, season_months.abbreviation as abbreviation, seasonal_forecast.year as year, minor_sector.minor_name as sector FROM advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND ussdmenulanguage.id='$identity' GROUP BY advisory.id";
+            	
+
+			$seasonal_and_advisory = "SELECT advisory.sector as ident, advisory.region_id as sub_reg, minor_sector.minor_name as sector FROM advisory 
+LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id 
+LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id 
+LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region 
+LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND season_months.abbreviation  = '$ses' AND major_sector.language_id='$identity' AND advisory.region_id=1 GROUP BY advisory.id
+UNION 
+SELECT advisory.sector as ident, advisory.region_id as sub_reg, minor_sector.minor_name as sector from advisory 
+LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id
+LEFT OUTER JOIN seasonal_forecast on advisory.forecast_id = seasonal_forecast.id 
+LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id 
+LEFT OUTER JOIN area_seasonal_forecast on advisory.forecast_id = area_seasonal_forecast.forecast_id 
+LEFT OUTER JOIN sub_region on sub_region.id = advisory.region_id 
+LEFT OUTER JOIN division on division.sub_region_id = sub_region.id where  major_sector.language_id = '$identity' and season_months.abbreviation = '$ses' AND division.division_name = '$divisions' GROUP BY advisory.id";
+
+
+
+//                 $seasonal_and_advisory = "SELECT advisory.message_summary as summary, season_months.abbreviation as abbreviation, seasonal_forecast.year as year, minor_sector.minor_name as sector FROM advisory 
+// LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+// LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+// LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id 
+// LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id 
+// LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id 
+// LEFT OUTER JOIN division  on  advisory.region_id = division.sub_region_id 
+// LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND ussdmenulanguage.id='$identity' AND season_months.abbreviation='$ses' GROUP BY advisory.id";
 
                 $query = $conn->query($seasonal_and_advisory);
                 if ($query->num_rows > 0) {
@@ -257,41 +306,84 @@ use AfricasTalking\SDK\AfricasTalking;
         $menuVal = 0;
         $queryProc = "";
         $sectors_data = array();
+        $sectors_data_ids = array();
          try {
             $conn = $this->connectionStr->ConnectionFc();
             $today = date('Y-m-d');
+            $the_date = $today;
+            $yesterday = date( 'Y-m-d', strtotime( $today . ' -1 day' ) );
+
+
+
             $divisions = strtoupper($_SESSION['district']);
             $lange = $_SESSION['language'];
             $qProc = "SELECT id, daily FROM ussdmenulanguage WHERE language = '$lange'";
             $seasonal_table = "";
             $identity = "";
-            
+            $ses= $this->get_seasom();
             $query = $conn->query($qProc);
             while ($row = $query->fetch_assoc()) {
                 $identity = $row['id'];  
             }
             
             if($data_for == "Daily Forecast"){
-                $daily_and_advisory="SELECT daily_advisory.message_summary as summary,weather_category.cat_name as weather_desc, minor_sector.minor_name as sector, daily_forecast.time as currently FROM daily_advisory LEFT OUTER JOIN minor_sector on minor_sector.id=daily_advisory.sector LEFT OUTER JOIN daily_forecast on daily_forecast.id=daily_advisory.forecast_id LEFT OUTER JOIN daily_forecast_data on daily_forecast_data.forecast_id = daily_advisory.forecast_id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN division on division.region_id = daily_forecast_data.region_id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$today' AND daily_forecast.language_id = '$identity'";
+                if(strtotime(date('Y-m-d g:ia')) < strtotime(date('Y-m-d').' 6:00pm') ){
+                    $the_date = $yesterday;
+                }
+                $daily_and_advisory="SELECT daily_advisory.sector as ident, daily_advisory.message_summary as summary,weather_category.cat_name as weather_desc, minor_sector.minor_name as sector, daily_forecast.time as currently FROM daily_advisory LEFT OUTER JOIN minor_sector on minor_sector.id=daily_advisory.sector LEFT OUTER JOIN daily_forecast on daily_forecast.id=daily_advisory.forecast_id LEFT OUTER JOIN daily_forecast_data on daily_forecast_data.forecast_id = daily_advisory.forecast_id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN division on division.region_id = daily_forecast_data.region_id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$the_date' AND daily_forecast.language_id = '$identity'";
+            
                 $query = $conn->query($daily_and_advisory);
                 if ($query->num_rows > 0) {
                     while ($row = $query->fetch_assoc()) {
                         $sectors_data[] = $row['sector'];
+                        $sectors_data_ids[] = $row['ident'];
                         $menuVal = 1;
                     }
                     $_SESSION['sectors'] = $sectors_data;
+                    $_SESSION['sectors_id'] = $sectors_data_ids;
                 }
             }else if($data_for == "Seasonal Forecast"){
-                $seasonal_and_advisory = "SELECT advisory.message_summary as summary, season_months.abbreviation as abbreviation, seasonal_forecast.year as year, minor_sector.minor_name as sector FROM advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND ussdmenulanguage.id='$identity' GROUP BY advisory.id";
+
+//             	$seasonal_and_advisory = "SELECT advisory.sector as ident, minor_sector.minor_name as sector FROM advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND abbreviation  = '$ses' AND ussdmenulanguage.id='$identity' AND advisory.region_id=1 GROUP BY advisory.id UNION SELECT advisory.sector as ident, minor_sector.minor_name as sector from advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+// LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+
+// LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id
+
+// LEFT OUTER JOIN seasonal_forecast on advisory.forecast_id = seasonal_forecast.id 
+// LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id 
+// LEFT OUTER JOIN area_seasonal_forecast on advisory.forecast_id = area_seasonal_forecast.forecast_id 
+// LEFT OUTER JOIN sub_region on sub_region.id = advisory.region_id 
+// LEFT OUTER JOIN division on division.sub_region_id = sub_region.id where  major_sector.language_id = '$identity' and season_months.abbreviation = '$ses' AND division.division_name = '$divisions' GROUP BY advisory.id";
+
+$seasonal_and_advisory = "SELECT advisory.sector as ident, advisory.region_id as sub_reg, minor_sector.minor_name as sector FROM advisory 
+LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id 
+LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id 
+LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region 
+LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND season_months.abbreviation  = '$ses' AND major_sector.language_id='$identity' AND advisory.region_id=1 GROUP BY advisory.id
+UNION 
+SELECT advisory.sector as ident, advisory.region_id as sub_reg, minor_sector.minor_name as sector from advisory 
+LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id 
+LEFT OUTER JOIN major_sector on major_sector.id = minor_sector.major_id 
+LEFT OUTER JOIN ussdmenulanguage on ussdmenulanguage.id = major_sector.language_id
+LEFT OUTER JOIN seasonal_forecast on advisory.forecast_id = seasonal_forecast.id 
+LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id 
+LEFT OUTER JOIN area_seasonal_forecast on advisory.forecast_id = area_seasonal_forecast.forecast_id 
+LEFT OUTER JOIN sub_region on sub_region.id = advisory.region_id 
+LEFT OUTER JOIN division on division.sub_region_id = sub_region.id where  major_sector.language_id = '$identity' and season_months.abbreviation = '$ses' AND division.division_name = '$divisions' GROUP BY advisory.id";
 
                 $query = $conn->query($seasonal_and_advisory);
                 if ($query->num_rows > 0) {
                     while ($row = $query->fetch_assoc()) {
                         $sectors_data[] = $row['sector'];
+                        $sectors_data_ids[] = $row['ident'];
                         $menuVal = 1;
                     }
                     $_SESSION['sectors'] = $sectors_data;
+                    $_SESSION['sectors_id'] = $sectors_data_ids;
                 }
+
             }else if($data_for == "Dekadal Forecast"){
                 //$menuVal = "sdfghjkljhgfdsdfghjilo;yutrefstryuilfg";
             }
@@ -320,7 +412,20 @@ use AfricasTalking\SDK\AfricasTalking;
             $conn = $this->connectionStr->ConnectionFc();
             $divisions = strtoupper($_SESSION['district']);
             $today = date('Y-m-d');
-            $day = date("l", strtotime(date("Y-m-d")));
+
+            $the_date = $today;
+
+            $yesterday = date( 'Y-m-d', strtotime( $today . ' -1 day' ) );
+            $tomorrow = date( 'Y-m-d', strtotime( $today . ' +1 day' ) );
+
+
+
+            $days = date("l", strtotime(date("Y-m-d")));
+
+            $day_tmr = date("l", strtotime($tomorrow));
+
+
+
             $season_date = date('Y-m-d');
             $queryProc = "";
 
@@ -340,18 +445,7 @@ use AfricasTalking\SDK\AfricasTalking;
              $times = array('0:00','6:00','12:00','18:00');
              $actual_time = date('g:ia');
 
-           
-          //  $timeframe = "";
-          //   if (time() >= strtotime($times[0]) && time() < strtotime($times[1])) {
-          //     $timeframe = "Early Morning";
-          //    }else if (time() >= strtotime($times[1]) && time() < strtotime($times[2])) {
-          //       $timeframe = "Late Morning";
-          //  }else if (time() >= strtotime($times[2]) && time() < strtotime($times[3])) {
-          //      $timeframe = "Afternoon";
-          // }else{
-          //      $timeframe = "Late Evening";
-          //    }
-
+    
             // checking for the month and getting the current season used to query the data
             
               $forecast_s = $_SESSION["forecast_selected"];
@@ -378,43 +472,77 @@ use AfricasTalking\SDK\AfricasTalking;
 
 
 
-            // if($langes != "English"){
-            //     // For the daily forecast
-            //     // $forecast = $this->translate($forecast);
-            //     $wind = $this->translate("Wind");
-            //     $temp = $this->translate($temp);
-            //     $wet = $this->translate($wet);
-            //     $sum = $this->translate($sum);
-            //     $advice = $this->translate("Advisory");
-
-            //     // For seasonal forecast
-            //     // $forecast_s = $this->translate($forecast_s);
-            //     $late = $this->translate($late);
-            //     $mid = $this->translate($mid);
-            //     $early = $this->translate($early);
-
-
-            // }
-
-
-
-
+            // $time_skips = 0;
+            $ses= $this->get_seasom();
 
             if($data_for == "Daily Forecast no advisory"){
-                $queryProc = "SELECT daily_forecast_data.mean_temp as mean_temp, daily_forecast_data.wind_strength as strength, weather_category.cat_name as weather_desc, daily_forecast.weather as weather FROM daily_forecast LEFT OUTER JOIN daily_forecast_data ON daily_forecast.id = daily_forecast_data.forecast_id LEFT OUTER JOIN region ON region.id = daily_forecast_data.region_id LEFT OUTER JOIN division on division.region_id = region.id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$today' AND daily_forecast.language_id = '$identity' ORDER BY daily_forecast_data.id DESC LIMIT 1";
-                $query = $conn->query($queryProc);
-                if ($query->num_rows > 0) {
-                     while ($row = $query->fetch_assoc()) {
-                        // Handles translations
-                        
+                if(strtotime(date('Y-m-d g:ia')) < strtotime(date('Y-m-d').' 6:00pm') ){
+                    $the_date = $yesterday;
 
-                        $menuVal = "$divisions, $day, $forecast_s\n$wind: ".$row["strength"]."\n$temp: ".$row['mean_temp'].".C\n$wet: ".$row['weather_desc']."\n$sum: ".$row['weather'];
+                   
+                }
+                $queryProc = "SELECT daily_forecast.date as forecasted, forecast_time.period_name as period, forecast_time.from_time, forecast_time.to_time, daily_forecast_data.mean_temp as mean_temp,daily_forecast_data.period as periodic, daily_forecast_data.wind_strength as strength, weather_category.cat_name as weather_desc, daily_forecast.weather as weather FROM daily_forecast LEFT OUTER JOIN daily_forecast_data ON daily_forecast.id = daily_forecast_data.forecast_id LEFT OUTER JOIN region ON region.id = daily_forecast_data.region_id LEFT OUTER JOIN division on division.region_id = region.id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN forecast_time on daily_forecast_data.period = forecast_time.id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$the_date' AND daily_forecast.language_id = '$identity' AND daily_forecast.time = 5 ORDER BY daily_forecast_data.id ASC";
+                
+                $query = $conn->query($queryProc);
+                if ($query->num_rows > 0) { $once = 0;
+                    $menuVal ="$divisions, $forecast_s\n";
+                     while ($row = $query->fetch_assoc()) {
+                        $from_time = $row["from_time"];
+                        $to_time = $row["to_time"];
+                        $days = date("l", strtotime($row["forecasted"]));
+                        $tomorrow = date( 'Y-m-d', strtotime($row["forecasted"] . ' +1 day' ) );
+                        $day_tmr = date("l", strtotime($tomorrow));
+
+                        if($once<1){
+                            $menuVal .="\n$sum: ".$row['weather']."\n";
+                            $day = $days;
+                        }else{
+                            $day = $day_tmr;
+                        }
+                    
+                        // if($once < ($time_skips)){}else{                            
+                            $menuVal .= "$day, ".ucwords($row["period"])."\n($from_time - $to_time)"."\n$wind: ".$row["strength"]."\n$temp: ".$row['mean_temp'].".C\n$wet: ".ucwords($row['weather_desc'])."\n\n";
+                            
+                        // }
+                            $once++;
+                    }
+                }else{
+                	$queryProc = "SELECT daily_forecast.date as forecasted, forecast_time.period_name as period, forecast_time.from_time, forecast_time.to_time, daily_forecast_data.mean_temp as mean_temp,daily_forecast_data.period as periodic, daily_forecast_data.wind_strength as strength, weather_category.cat_name as weather_desc, daily_forecast.weather as weather FROM daily_forecast LEFT OUTER JOIN daily_forecast_data ON daily_forecast.id = daily_forecast_data.forecast_id LEFT OUTER JOIN region ON region.id = daily_forecast_data.region_id LEFT OUTER JOIN division on division.region_id = region.id LEFT OUTER JOIN weather_category on weather_category.id = daily_forecast_data.weather_cat_id LEFT OUTER JOIN forecast_time on daily_forecast_data.period = forecast_time.id WHERE division.division_name = '$divisions' AND daily_forecast.date = '$today' AND daily_forecast.language_id = '$identity' AND daily_forecast.time <> 5 ORDER BY daily_forecast_data.id ASC";
+                	$query = $conn->query($queryProc);
+                    if ($query->num_rows > 0) {
+                    	$menuVal ="$divisions, $forecast_s\n";
+                         while ($row = $query->fetch_assoc()) {
+                            $from_time = $row["from_time"];
+                            $to_time = $row["to_time"];
+                            $days = date("l", strtotime($row["forecasted"]));
+                            $tomorrow = date( 'Y-m-d', strtotime($row["forecasted"] . ' +1 day' ) );
+                            $day_tmr = date("l", strtotime($tomorrow));
+
+                            if($once<1){
+                                $menuVal .="\n$sum: ".$row['weather']."\n";
+                                $day = $days;
+                            }else{
+                                $day = $day_tmr;
+                            }
                         
+                            // if($once < ($time_skips)){}else{                            
+                                $menuVal .= "$day, ".ucwords($row["period"])."\n($from_time - $to_time)"."\n$wind: ".$row["strength"]."\n$temp: ".$row['mean_temp'].".C\n$wet: ".ucwords($row['weather_desc'])."\n\n";
+                                
+                            // }
+                                $once++;
+                        }
                     }
                 }
             }else if($data_for == "Seasonal Forecast no advisory"){
-                $seasonal = "SELECT area_seasonal_forecast.overall_comment as comment, area_seasonal_forecast.onset_period as onset_period,area_seasonal_forecast.onsetdesc as onsetdesc,area_seasonal_forecast.peakdesc as peakdesc,area_seasonal_forecast.expected_peak as expected_peak,area_seasonal_forecast.enddesc as enddesc,area_seasonal_forecast.end_period as end_period, seasonal_forecast.year as year, season_months.abbreviation as abbreviation FROM division LEFT OUTER JOIN region on division.main_region = region.id LEFT OUTER JOIN area_seasonal_forecast on area_seasonal_forecast.region_id =  division.main_region LEFT OUTER JOIN sub_region on area_seasonal_forecast.subregion_id = sub_region.id LEFT OUTER JOIN seasonal_forecast on area_seasonal_forecast.forecast_id = seasonal_forecast.id LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions'  AND area_seasonal_forecast.language_id='$identity' LIMIT 1";
+                $seasonal = "SELECT area_seasonal_forecast.overall_comment as comment, area_seasonal_forecast.onset_period as onset_period,area_seasonal_forecast.onsetdesc as onsetdesc,area_seasonal_forecast.peakdesc as peakdesc,area_seasonal_forecast.expected_peak as expected_peak,area_seasonal_forecast.enddesc as enddesc,area_seasonal_forecast.end_period as end_period, seasonal_forecast.year as year, season_months.abbreviation as abbreviation  FROM area_seasonal_forecast
+                    LEFT OUTER JOIN seasonal_forecast on area_seasonal_forecast.forecast_id = seasonal_forecast.id 
+                    LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id
+                    LEFT OUTER JOIN division on division.sub_region_id = area_seasonal_forecast.subregion_id
+                    WHERE season_months.abbreviation = '$ses' AND division.division_name = '$divisions'  AND area_seasonal_forecast.language_id='$identity'";
 
+
+
+                
                 $query = $conn->query($seasonal);
                 if ($query->num_rows > 0) {
                     while ($row = $query->fetch_assoc()) {
@@ -434,11 +562,9 @@ use AfricasTalking\SDK\AfricasTalking;
 
                                // $menuVal = "$divisions, $forecast_s:\n$start ".$final[1]." ".$row['onset_period'].", $peak ".$final[0]." ".$row["expected_peak"]." $ends ".$final[2]." ".$row["end_period"];
                             
-                            if($lange == "English"){
-                                	$menuVal = "$divisions,  $forecast_s:\n$start ".$final[1]." ".$onset_period .", $peak ".$final[0]." ".$expected_peak." $ends ".$final[2]." ".$end_period;
-                                }else{
+                            
                                 	$menuVal = "$divisions,  $forecast_s:\n".$row["comment"];
-                                }
+                                
 
                             
                         }
@@ -454,7 +580,7 @@ use AfricasTalking\SDK\AfricasTalking;
 
 
                 if(isset($ad)){
-                    $daily_and_advisory .=" AND minor_sector.minor_name = '$ad'";
+                    $daily_and_advisory .=" AND minor_sector.id = '$ad'";
                 }
                 // $daily_and_advisory .=" LIMIT 1";
                 $query = $conn->query($daily_and_advisory);
@@ -475,26 +601,31 @@ use AfricasTalking\SDK\AfricasTalking;
                         $weather = $rows['weather'];
                        
                     }
-                    $menuVal = "$divisions, $day, $forecast_s\n$wind: ".$strength."\n$temp: ".$mean_temp.".C\n$wet: ".$row['weather_desc']."\n$sum: ".$weather."\n\n$advice ".$row['sector'].": ".$row['summary'];
+                    $menuVal = "$divisions, $day, $forecast_s\n$wind: ".$strength."\n$temp: ".$mean_temp.".C\n$wet: ".$row['weather_desc']."\n$sum: ".$weather."\n\n".$row['sector'].": ".$row['summary'];
 
 
 
                     }
                 }
             }else if($data_for == "Seasonal Forecast"){
+            	$ses= $this->get_seasom();
                 // write a query that joins the forecast to the advisory but for the where clause of advisory sector
                 // it should be in the if statement
-                $seasonal_and_advisory = "SELECT advisory.message_summary as summary, season_months.abbreviation as abbreviation, seasonal_forecast.year as year, minor_sector.minor_name as sector FROM advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions'";
+                $seasonal_and_advisory = "SELECT advisory.message_summary as summary, season_months.abbreviation as abbreviation, seasonal_forecast.year as year, minor_sector.minor_name as sector FROM advisory LEFT OUTER JOIN minor_sector on advisory.sector = minor_sector.id LEFT OUTER JOIN seasonal_forecast  on  advisory.forecast_id = seasonal_forecast.id LEFT OUTER JOIN area_seasonal_forecast  on  advisory.forecast_id = area_seasonal_forecast.forecast_id LEFT OUTER JOIN division  on  area_seasonal_forecast.region_id = division.main_region LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' AND season_months.abbreviation='$ses' ";
                 if(isset($ad)){
-                    $seasonal_and_advisory .=" AND minor_sector.minor_name = '$ad'";
+                    $seasonal_and_advisory .=" AND minor_sector.id = $ad";
                 }
                 $seasonal_and_advisory .=" GROUP BY advisory.id";
 
-                $sectors_data = array();
+                
                 $query = $conn->query($seasonal_and_advisory);
                 if ($query->num_rows > 0) {
                     while ($row = $query->fetch_assoc()) {
-                        $data_qry = "SELECT area_seasonal_forecast.overall_comment as comment, area_seasonal_forecast.onset_period as onset_period,area_seasonal_forecast.onsetdesc as onsetdesc,area_seasonal_forecast.peakdesc as peakdesc,area_seasonal_forecast.expected_peak as expected_peak,area_seasonal_forecast.enddesc as enddesc,area_seasonal_forecast.end_period as end_period, seasonal_forecast.year as year, season_months.abbreviation as abbreviation FROM division LEFT OUTER JOIN region on division.region_id = region.id LEFT OUTER JOIN area_seasonal_forecast on area_seasonal_forecast.region_id =  division.main_region LEFT OUTER JOIN sub_region on area_seasonal_forecast.subregion_id = sub_region.id LEFT OUTER JOIN seasonal_forecast on area_seasonal_forecast.forecast_id = seasonal_forecast.id LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id WHERE division.division_name = '$divisions' and area_seasonal_forecast.language_id='$identity' LIMIT 1";
+                        $data_qry = "SELECT area_seasonal_forecast.overall_comment as comment, area_seasonal_forecast.onset_period as onset_period,area_seasonal_forecast.onsetdesc as onsetdesc,area_seasonal_forecast.peakdesc as peakdesc,area_seasonal_forecast.expected_peak as expected_peak,area_seasonal_forecast.enddesc as enddesc,area_seasonal_forecast.end_period as end_period, seasonal_forecast.year as year, season_months.abbreviation as abbreviation  FROM area_seasonal_forecast
+                    LEFT OUTER JOIN seasonal_forecast on area_seasonal_forecast.forecast_id = seasonal_forecast.id 
+                    LEFT OUTER JOIN season_months on seasonal_forecast.season_id = season_months.id
+                    LEFT OUTER JOIN division on division.sub_region_id = area_seasonal_forecast.subregion_id
+                    WHERE season_months.abbreviation = '$ses' AND division.division_name = '$divisions'  AND area_seasonal_forecast.language_id='$identity'";
                         
                         $querying = $conn->query($data_qry);
                         $onsetdesc = "";
@@ -673,7 +804,17 @@ use AfricasTalking\SDK\AfricasTalking;
         try{
             $conn = $this->connectionStr->ConnectionFc();
             $lang = $_SESSION['language'];
-            $queryProc = "SELECT location FROM voice WHERE language = '$lang' ORDER BY id DESC LIMIT 1";
+            $lang_id = $_SESSION['lang_id'];
+
+            $season = "unknown";
+            if((date('m') == 1) || (date('m') == 2) ) $season = 'MAM';
+            else  if((date('m') == 3) || (date('m') == 4)  || (date('m') == 5) ) $season = 'MAM';
+            else if ((date('m') == 6) || (date('m') == 7)  || (date('m') == 8) ) $season = 'JJA';
+            else $season = 'SOND';
+
+
+            $name = $lang_id."_".$season."_".date('Y');
+            $queryProc = "SELECT * FROM voice WHERE voice_name = '$name' LIMIT 1";
             $query = $conn->query($queryProc);
             if ($query->num_rows > 0) {
                 return 1;
@@ -681,6 +822,13 @@ use AfricasTalking\SDK\AfricasTalking;
                 return 0;
             }
         }catch(Exception $ex){}
+    }
+
+    public function LogCall_Requests($msisdn, $sessionID)
+    {
+        $lang_id = $_SESSION['lang_id'];
+        $sql= "INSERT INTO `voice_requests`(`phone`, `language_id`,`sessionID`) VALUES ('$msisdn', '$lang_id', '$sessionID')";
+        $result = $this->Insertion_UpdateQuerysMainSession($sql);
     }
  }
 

@@ -20,22 +20,7 @@ $field="";
 
 if ($isActive == 1) {
        //make db connection and get language to return
-    // try {
-    //     $conn = $this->connectionStr->ConnectionFc();
-    //     $sql = "SELECT Level8 FROM ussdtransaction WHERE Msisdn = $callerNumber ORDER BY TranId DESC LIMIT 1 ";
-    //     $query = $conn->query($sql);
-    //     if($query->num_rows > 0){
-    //       $field= $query->fetch_assoc();
-    //       $language = $field['Level8'];
-    //     }
-    //     else{
-    //       logFile("No such record for ".$callerNumber);
-    //     }
-          
-        
-    // }catch(Exception $e){
 
-    // }
     
     $response  = '<?xml version="1.0" encoding="UTF-8"?>';
     $response .= '<Response>';

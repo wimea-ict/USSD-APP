@@ -1,51 +1,30 @@
 <?php  
 
-    $dbname = ' ';
-    $dbuser = ' ';
-    $dbpass = ' ';
+    $dbname = '';
+    $dbuser = '';
+    $dbpass = '';
     //$dbpass = '';
     $dbhost = 'localhost';
 
+
+
     $conn = new mysqli($dbhost, $dbuser,$dbpass,$dbname);
 
-
-    $lang_qry = "SELECT * FROM ussdmenulanguage";
-    $query = $conn->query($lang_qry);
-    $languages = array();
-
-    while ($row = $query->fetch_assoc()){
-        $languages[] = $row['language'];
-    }
-    $lang  = "";
-
-    $fd = 0;
     $callerNumber = $_POST['callerNumber'];
-
-    $sql = "SELECT menuvalue FROM ussdtransaction_new WHERE phone = $callerNumber ORDER BY id DESC";
-    $query = $conn->query($sql);
-    if($query->num_rows > 0){
-        while ($row = $query->fetch_assoc()){
-            foreach ($languages as $k) {
-                if($row['menuvalue'] == $k){
-                    $lang = $k;
-                    $fd = 1;
-                }
-            }
-            if($fd == 1){
-                break;
-            }
-        }
+    $voice_req = "SELECT * FROM voice_requests WHERE phone = $callerNumber ORDER BY id DESC LIMIT 1";
+    $query = $conn->query($voice_req);
+    // $languages = array();
+    $lang = "";
+    while ($row = $query->fetch_assoc()){
+        $lang = $row['language_id'];
     }
 
-    $sql2 = "SELECT location FROM voice WHERE language = '$lang' ORDER BY id DESC LIMIT 1";
-    $querying = $conn->query($sql2);
-    $url_default = "";
-    if($querying->num_rows > 0){
-        while ($row = $querying->fetch_assoc()){
-            $url_default = $row['location'];
-        }
-    }
-    
+    $season = "unknown";
+      if((date('m') == 3) || (date('m') == 4)  || (date('m') == 5) ) $season = 'MAM';
+      else if ((date('m') == 6) || (date('m') == 7)  || (date('m') == 8) ) $season = 'JJA';
+      else $season = 'SOND';
+
+    $name = $lang."_".$season."_".date('Y').".mp3";
 
     
     $sessionId = $_POST['sessionId'];
@@ -60,7 +39,7 @@
         
         $response  = '<?xml version="1.0" encoding="UTF-8"?>';
         $response .= '<Response>';
-        $response .= '<Play url="http://wids.mak.ac.ug/'.$url_default.'"/>';//wids.mak.ac.ug/Dissemination/uploads/lugandaMAM19
+        $response .= '<Play url="http://wids.mak.ac.ug/wids/assets/audio/'.$name.'"/>';//wids.mak.ac.ug/Dissemination/uploads/lugandaMAM19
         $response .= '</Response>';
         header('Content-type: text/plain');
         echo $response;

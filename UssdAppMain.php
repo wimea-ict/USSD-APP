@@ -37,10 +37,7 @@ if($receiver->getInput() !=null){
 	if (!(isset($_SESSION['menu-Opt']))) { //Send the main menu....if menu not set
 
    
-            $_SESSION['menu-Opt'] = "language";
-           
-            
-           
+            $_SESSION['menu-Opt'] = "language";      
  
  	}
  }
@@ -81,7 +78,7 @@ if ( $receiver->getInput() != "") {
         $_SESSION['menu-Opt'] = $logic->ProcessSector($receiver->getInput(), $sessionId, $msisdn);
         break;
       case "invaliddistrict":
-          $_SESSION['menu-Opt'] =   $logic->invaliddistrict($receiver->getInput());  
+          $_SESSION['menu-Opt'] =   $logic->invaliddistrict($receiver->getInput(), $sessionId, $msisdn);  
                break;
       case "Submission-opt":
          $_SESSION['menu-Opt'] = $logic->SubmissionOpt($receiver->getInput(),$sessionId,$msisdn);

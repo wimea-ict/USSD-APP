@@ -11,24 +11,6 @@ $currencyCode  = $_POST['currencyCode'];
 $amount  = $_POST['amount'];
 $language = "";
 
-// $dbname = 'dissemination';
-// $dbuser = 'root';
-// $dbpass = 'Rc4@dm1n';
-//$dbpass = '';
-// $dbhost = 'localhost';
-// $conn = new mysqli($dbhost, $dbuser,$dbpass,$dbname);
-//         $sql = "SELECT Level8 FROM ussdtransaction WHERE Msisdn = $callerNumber ORDER BY TranId DESC LIMIT 1 ";
-//         $query = $conn->query($sql);
-//         if($query->num_rows > 0){
-//           $field= $query->fetch_assoc();
-//           $language = $field['Level8'];
-          
-//         }
-//         else{
-          
-//           logFile("No such record for ".$callerNumber);
-//         }
-// $language = "English"
 $recordingUrl = $_POST['sessionId'];
 $isActive  = $_POST['isActive'];
 if ($isActive == 1) {

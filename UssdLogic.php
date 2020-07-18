@@ -120,7 +120,7 @@ $strToDisp = "";
                 }
         }else if($menuName == "Submission-opt"){
              $responseMsg = strtoupper($_SESSION['district']).", ".$_SESSION["forecast_selected"]."-";
-           $responseMsg .= $this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."-1. ".$this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."-2. ".$this->DBQueryFunctions->loadUssdMenu("back", $menu_table);
+           $responseMsg .= "1. ".$this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."-2. ".$this->DBQueryFunctions->loadUssdMenu("back", $menu_table);
         }else if($menuName == "district"){
   $responseMsg = $this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."-0. ".  $responseMsg .= $this->DBQueryFunctions->loadUssdMenu("back", $menu_table);
 }
@@ -174,6 +174,7 @@ function ProcessLanguage($input,$sessionId,$msisdn){
     $delta = "";
     if($input == 1){
         $_SESSION['language'] = "English";
+        $_SESSION['lang_id'] = 1;
         $menuName = "district"; 
     }
     else if((($input-1) <= count($_SESSION['languages'])) && ($input-1) > 0){
@@ -181,6 +182,7 @@ function ProcessLanguage($input,$sessionId,$msisdn){
         foreach ($_SESSION['languages'] as $s) {
             if(($input-2) == $ct){
                 $_SESSION['language'] = $s;
+                $_SESSION['lang_id'] = $_SESSION['ids'][$ct];
             }
             $ct++;
         }
@@ -248,7 +250,8 @@ function ProcessFeedback($input,$sessionId,$msisdn){
         $menuName = "feedbackrep";
 
         $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], $menuVar, $input);
-        $this->DBQueryFunctions->saveFeedback($msisdn,$_SESSION['district'], $input);       $this->DBQueryFunctions->Messages($this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."\nDial *255*85#",$msisdn);
+        $this->DBQueryFunctions->saveFeedback($msisdn,$_SESSION['district'], $input);       
+        $this->DBQueryFunctions->Messages($this->DBQueryFunctions->loadUssdMenu($menuName, $menu_table)."\nDial *255*85#",$msisdn);
     }
     
     
@@ -275,11 +278,7 @@ function ProcessProduct($input,$sessionId,$msisdn){
         foreach ($_SESSION['real_forecast_availbale'] as $s) {
             if(($input-1) == $ct){
                 $_SESSION['forecast_for'] = $s;
-
-
                 $_SESSION["forecast_selected"] = $_SESSION["forecast_availbale"][$ct];
-
-
                 $_SESSION['sector_lable'] = $_SESSION['forecast_availbale'][$ct];
                 $with_ad = "true";
                 break;
@@ -312,20 +311,18 @@ function ProcessProduct($input,$sessionId,$msisdn){
 public function availability($msisdn,$sessionId,$entry_data, $with_ad){
     $menuName = "";
     if(strlen($entry_data)>9){
-        if($with_ad == "true"){
             $menuName = "sector";
+            // Checks for sectors available for that forecast thats correspond to the selected district
             $counted = $this->DBQueryFunctions->available_sectors($_SESSION['forecast_for']);
             if($counted < 1){
-
+                $_SESSION['forecast_forty'] = 'true';
                 $menuName = "Submission-opt";
+                $audio = $this->DBQueryFunctions->checkAudio();
+                if($audio == 1){
+                    $menuName = "response_format";
+                }
+                
             }
-        }else{
-            if($_SESSION['forecast_for'] == "Seasonal Forecast"){
-                $menuName = "response_format";
-            }else{
-                $menuName = "Submission-opt";
-            }
-        }
     }else{
         $menuName = "no_data";
         $menuVar = "Product";
@@ -348,18 +345,15 @@ public function ProcessResponse($input,$sessionId,$msisdn){
             if(substr($_SESSION['forecast_for'], -11)=="no advisory"){
                 $menuName = "End";
                // $rr = "#";
-$mess =$_SESSION['final_message']."\nFor more, please dial *255*85#";
+                $mess ="WIDS Weather forecast\n".$_SESSION['final_message']."For more, please dial *255*85# or Visit http://wids.mak.ac.ug/wids\n";
                 $msg = $this->DBQueryFunctions->Messages($mess,$msisdn);
             }else{
                 $menuName = "Submission-opt";
             }
-
-
-            $responseMsg = $this->DBQueryFunctions->loaded_data($_SESSION['forecast_for']);
-            $_SESSION['final_message'] = $responseMsg;
             break;
         case '2':
         	$menuName = "voicecall";
+            $LogCall = $this->DBQueryFunctions->LogCall_Requests($msisdn,$sessionId);
         	$Log = $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], $menuVar, 'Voice');
             $voicemail = $this->DBQueryFunctions->triggerCall($msisdn);
         	break;
@@ -368,7 +362,7 @@ $mess =$_SESSION['final_message']."\nFor more, please dial *255*85#";
 
 
             $Log = $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], $menuVar, 'Back');
-       // $voicemail = $this->DBQueryFunctions->triggerCall($msisdn);
+       
             break;
         default:
             $_SESSION['menu_on'] = "response_format";
@@ -403,8 +397,8 @@ public function ProcessSector($input,$sessionId,$msisdn){
         $ct = 0;
         foreach ($_SESSION['sectors'] as $s) {
             if(($input-1) == $ct){
-                $Log = $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], "Sector", $s );
-                $responseMsg = $this->DBQueryFunctions->loaded_data($_SESSION['forecast_for'],$s);
+                $Log = $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], "Sector", $s);
+                $responseMsg = $this->DBQueryFunctions->loaded_data($_SESSION['forecast_for'], $_SESSION['sectors_id'][$ct]);
                 $menuName = "Submission-opt";
                 if($_SESSION['forecast_for'] == "Seasonal Forecast"){
                     $audio = $this->DBQueryFunctions->checkAudio();
@@ -457,7 +451,7 @@ function SubmissionOpt($menuOpt,$sessionId,$msisdn) {
  switch ($menuOpt) {
                 case "1" :
                     $menuName = "End";
-$mess = $_SESSION['final_message']."\nFor more, please dial *255*85#";
+$mess ="WIDS Weather forecast\n". $_SESSION['final_message']."For more, please dial *255*85# or Visit http://wids.mak.ac.ug/wids\n";
                     $msg = $this->DBQueryFunctions->Messages($mess,$msisdn);
                     $Log = $this->DBQueryFunctions->LogUpdates($msisdn,$sessionId, $_SESSION['district'], "Confirmation", "Confirmed");
                     break;
@@ -468,10 +462,10 @@ $mess = $_SESSION['final_message']."\nFor more, please dial *255*85#";
                         $menuName = "sector"; 
                         // check availability of the audio clip
 
-                        $audio = $this->DBQueryFunctions->checkAudio();
-                        if($audio == 1){
+                        // $audio = $this->DBQueryFunctions->checkAudio();
+                        // if($audio == 1){
                             $menuName = "response_format";
-                        }
+                        // }
                        
                     }else{
                         $menuName = "sector";
@@ -491,7 +485,7 @@ $mess = $_SESSION['final_message']."\nFor more, please dial *255*85#";
 }
 
 
-     function invaliddistrict($menuOpt){
+     function invaliddistrict($menuOpt, $sessionId, $msisdn ){
         $menuName = "";
         $menuVar = "District";
         if($menuOpt == ""){
