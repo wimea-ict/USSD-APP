@@ -1,0 +1,31 @@
+<?php
+# Fill our vars and run on cli
+# $ php -f db-connect-test.php
+class connectionStr{    
+	public function __construct(){}
+
+	public function ConnectionFc(){
+		$dbname = '';
+		$dbuser = '';
+		$dbpass = '';
+		$dbhost = 'localhost';
+		$conn = new mysqli($dbhost, $dbuser,$dbpass,$dbname);
+
+
+		if($conn->connect_error){
+			
+			die("Connection Error" . $conn->connect_error);
+			$conn = "";
+			return $conn;
+
+
+		}else{
+
+
+			return $conn;
+
+		}
+	}
+
+}
+?>
